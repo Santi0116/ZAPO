@@ -30,17 +30,23 @@ export default function Account() {
       setLoadingRole(true);
 
       try {
+
         const { data, error } = await supabase
           .from("profiles")
-          .select("role")
+          .select("id, role")
           .eq("id", user.id)
           .maybeSingle();
+
+        console.log("Usuario autenticado:", user.id);
+        console.log("Perfil encontrado:", data);
+        console.log("Error al consultar el perfil:", error);
 
         if (error) throw error;
 
         if (active) {
           setRole(data?.role?.trim().toLowerCase() ?? null);
         }
+
       } catch (error) {
         console.error("No se pudo consultar el rol:", error);
 
