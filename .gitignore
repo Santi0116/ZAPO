@@ -1,0 +1,15 @@
+# IDE
+.idea/
+.vscode/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Dependencias y compilaciones
+node_modules/
+**/node_modules/
+dist/
+build/
+

@@ -1,0 +1,35 @@
+
+{
+  "expo": {
+    "name": "ZAPO",
+    "slug": "zapo",
+    "scheme": "zapo",
+    "android": {
+      "package": "com.zapo.store"
+    },
+    "ios": {
+      "bundleIdentifier": "com.zapo.store"
+    },
+    "plugins": [
+      [
+        "react-native-maps",
+        {
+          "androidGoogleMapsApiKey": "TU_CLAVE_ANDROID",
+          "iosGoogleMapsApiKey": "TU_CLAVE_IOS"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ZAPO necesita tu ubicación para mostrar direcciones y entregas."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ZAPO necesita acceso a la cámara para tomar fotografías."
+        }
+      ]
+    ]
+  }
+}
