@@ -34,6 +34,7 @@ jobs:
         working-directory: frontend-web
         run: npm ci
 
+      
       - name: Construir web
         working-directory: frontend-web
         env:
@@ -41,6 +42,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
+
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
