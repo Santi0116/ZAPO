@@ -41,6 +41,8 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_GOOGLE_MAPS_EMBED_URL: ${{ vars.VITE_GOOGLE_MAPS_EMBED_URL }}
+          VITE_STORE_ADDRESS: ${{ vars.VITE_STORE_ADDRESS }}
         run: npm run build
 
 
