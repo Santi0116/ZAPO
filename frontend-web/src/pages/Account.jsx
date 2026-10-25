@@ -1,119 +1,200 @@
+
 import { useState } from "react";
-import { supabase } from "../services/supabase";
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-export default function Account(){
-  const [mode,setMode]=useState("login");const [name,setName]=useState("");const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);
-  
+export default function Account() {
+  const navigate = useNavigate();
+  const { user, loading, isAuthenticated, register, login, logout } =
+    useAuth();
 
-async function submit(e) {
-  e.preventDefault();
-  setMessage("");
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  if (!supabase) {
-    setMessage("Error: Supabase no está configurado.");
-    return;
+  async function submit(event) {
+    event.preventDefault();
+    setMessage("");
+    setBusy(true);
+
+    try {
+      if (mode === "register") {
+        const result = await register({ name, email, password });
+
+        if (result.requiresEmailConfirmation) {
+          setMessage(
+            "Cuenta creada. Revisa tu correo y confirma la dirección antes de iniciar sesión."
+          );
+          setMode("login");
+          setPassword("");
+          return;
+        }
+
+        setMessage("¡Registro exitoso! Tu cuenta está activa.");
+      } else {
+        await login({ email, password });
+        setMessage("¡Inicio de sesión exitoso!");
+      }
+
+      window.setTimeout(() => {
+        navigate("/catalogo");
+      }, 1000);
+    } catch (error) {
+      const errorMessage = error?.message || "";
+
+      if (
+        errorMessage.toLowerCase().includes("already registered") ||
+        errorMessage.toLowerCase().includes("already exists")
+      ) {
+        setMessage(
+          "Este correo ya está registrado. Intenta iniciar sesión."
+        );
+      } else if (
+        errorMessage.toLowerCase().includes("invalid login credentials")
+      ) {
+        setMessage("Correo o contraseña incorrectos.");
+      } else if (
+        errorMessage.toLowerCase().includes("password should be at least")
+      ) {
+        setMessage("La contraseña no cumple los requisitos mínimos.");
+      } else {
+        setMessage(errorMessage || "No fue posible completar la operación.");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
-  setBusy(true);
+  async function handleLogout() {
+    setMessage("");
 
-  try {
-    const result =
-      mode === "register"
-        ? await supabase.auth.signUp({
-            email: email.trim(),
-            password,
-            options: {
-              data: { full_name: name.trim() },
-            },
-          })
-        : await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
-
-    if (result.error) {
-      throw result.error;
+    try {
+      await logout();
+      setMessage("Sesión cerrada correctamente.");
+    } catch (error) {
+      setMessage(error?.message || "No se pudo cerrar la sesión.");
     }
-
-    // Verificar si Supabase tiene una sesión activa.
-    const { data: sessionData, error: sessionError } =
-      await supabase.auth.getSession();
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-    if (!sessionData.session) {
-      setMessage(
-        mode === "register"
-          ? "Cuenta creada, pero no hay una sesión activa. Revisa la confirmación de correo en Supabase."
-          : "Credenciales aceptadas, pero no se encontró una sesión activa."
-      );
-      return;
-    }
-
-    setMessage(
-      mode === "register"
-        ? "¡Registro exitoso! Tu sesión está iniciada."
-        : "¡Inicio de sesión exitoso! Tu sesión está activa."
-    );
-
-    // Dar tiempo para que el usuario vea el mensaje.
-    window.setTimeout(() => {
-      window.location.assign("/catalogo");
-    }, 1200);
-  } catch (err) {
-    setMessage(
-      err.message || "No fue posible completar la operación."
-    );
-  } finally {
-    setBusy(false);
   }
+
+  if (loading) {
+    return (
+      <main className="section page-content auth-wrap">
+        <p>Comprobando tu sesión...</p>
+      </main>
+    );
+  }
+
+  if (isAuthenticated) {
+    return (
+      <main className="section page-content auth-wrap">
+        <span className="eyebrow">TU CUENTA ZAPO</span>
+        <h1>Mi cuenta</h1>
+
+        <p>Has iniciado sesión correctamente.</p>
+        <p>
+          <strong>Correo:</strong> {user?.email}
+        </p>
+        <p>
+          <strong>Nombre:</strong>{" "}
+          {user?.user_metadata?.full_name || "No especificado"}
+        </p>
+
+        <button
+          className="button button-dark"
+          onClick={() => navigate("/catalogo")}
+        >
+          Ir al catálogo
+        </button>
+
+        <button className="text-button" onClick={handleLogout}>
+          Cerrar sesión
+        </button>
+
+        {message && <p className="notice" role="status">{message}</p>}
+      </main>
+    );
+  }
+
+  return (
+    <main className="section page-content auth-wrap">
+      <span className="eyebrow">TU CUENTA ZAPO</span>
+
+      <h1>
+        {mode === "login" ? "Bienvenido de nuevo" : "Crea tu cuenta"}
+      </h1>
+
+      <form className="auth-form" onSubmit={submit}>
+        {mode === "register" && (
+          <label>
+            Nombre completo
+            <input
+              type="text"
+              autoComplete="name"
+              required
+              maxLength={100}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+        )}
+
+        <label>
+          Correo electrónico
+          <input
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Contraseña
+          <input
+            type="password"
+            autoComplete={
+              mode === "register" ? "new-password" : "current-password"
+            }
+            minLength={8}
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
+
+        <button className="button button-dark" type="submit" disabled={busy}>
+          {busy
+            ? "Procesando..."
+            : mode === "login"
+              ? "Iniciar sesión"
+              : "Registrarme"}
+        </button>
+      </form>
+
+      <button
+        className="text-button"
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          setMode(mode === "login" ? "register" : "login");
+          setMessage("");
+          setPassword("");
+        }}
+      >
+        {mode === "login"
+          ? "¿No tienes cuenta? Regístrate"
+          : "Ya tengo cuenta. Iniciar sesión"}
+      </button>
+
+      {message && (
+        <p className="notice" role="status">
+          {message}
+        </p>
+      )}
+    </main>
+  );
 }
-
-useEffect(() => {
-  if (!supabase) return;
-
-  let mounted = true;
-
-  async function checkSession() {
-    const { data, error } = await supabase.auth.getSession();
-
-    if (mounted) {
-      console.log(
-        "Sesión actual:",
-        error ? error.message : data.session?.user?.email ?? "Sin sesión"
-      );
-    }
-  }
-
-  checkSession();
-
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((event, session) => {
-    console.log(
-      "Cambio de autenticación:",
-      event,
-      session?.user?.email ?? "Sin sesión"
-    );
-  });
-
-  return () => {
-    mounted = false;
-    subscription.unsubscribe();
-  };
-}, []);
-
-
-  async function logout(){await supabase?.auth.signOut();setMessage("Sesión cerrada.");}
-  return <main className="section page-content auth-wrap"><span className="eyebrow">TU CUENTA ZAPO</span><h1>{mode==="login"?"Bienvenido de nuevo":"Crea tu cuenta"}</h1><form className="auth-form" onSubmit={submit}>
-    {mode==="register"&&<label>Nombre completo<input required value={name} onChange={e=>setName(e.target.value)}/></label>}
-    <label>Correo electrónico<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-    <label>Contraseña<input type="password" minLength="8" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
-    <button className="button button-dark" disabled={busy}>{busy?"Procesando…":mode==="login"?"Iniciar sesión":"Registrarme"}</button>
-  </form><button className="text-button" onClick={()=>setMode(mode==="login"?"register":"login")}>{mode==="login"?"¿No tienes cuenta? Regístrate":"Ya tengo cuenta"}</button><button className="text-button" onClick={logout}>Cerrar sesión</button>{message&&<p className="notice">{message}</p>}</main>;
-}
-
-
