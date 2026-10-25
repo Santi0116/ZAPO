@@ -55,7 +55,12 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-const port = process.env.PORT || 3000;
+const rawPort = process.env.PORT;
+const parsedPort = Number(rawPort);
+const port =
+  rawPort && Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535
+    ? parsedPort
+    : 3000;
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`ZAPO API escuchando en el puerto ${port}`);
